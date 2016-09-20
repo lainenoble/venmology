@@ -62,7 +62,7 @@ def mainpage():
 @app.route('/user/<user_id>', methods=['GET'])
 def user(user_id):
     plt.clf()
-    user_query="SELECT * FROM transactions WHERE actor = %(user_id)s OR target = %(user_id)s LIMIT 100;"
+    user_query="SELECT * FROM transactions WHERE actor = %(user_id)s OR target = %(user_id)s;"
     # NOTE: using %(user_id)s [see psycopg2 documentation] prevents sql injection
     user_query_results = pd.read_sql_query(user_query, con,params={'user_id':user_id})
     import matplotlib
@@ -75,20 +75,17 @@ def user(user_id):
     if images:
     # passed axis not bound to passed figure ?? (or vice versa?)
         plt.clf()
-        fig=Figure()
-        ax=fig.add_subplot(111)
+        fig = Figure()
+        ax = fig.add_subplot(111)
         pd.to_datetime(user_query_results.created_time).hist(bins=20,ax=ax)
-        canvas=FigureCanvas(fig)
+        canvas = FigureCanvas(fig)
         png_output = StringIO.StringIO()
         canvas.print_png(png_output)
         hist_img_data = base64.standard_b64encode(png_output.getvalue())
     
     
     
-    transactions=[]
-    for i in range(0,user_query_results.shape[0]):
-        print i
-        transactions.append(dict(user_query_results.iloc[i]))
+    transactions=user_query_results.to_dict('records')
     
     
     nx_img_data=''
@@ -97,7 +94,7 @@ def user(user_id):
         # user network visualization
         DG=nx.DiGraph()
         DG.add_node(str(user_id))
-        for i in range(0,user_query_results.shape[0]):
+        for i in range(0,max(user_query_results.shape[0],30)):
             if user_query_results.loc[i]['type']=='payment':
                 DG.add_edge(user_query_results.loc[i]['actor'],query_results.loc[i]['target'])
             else:
@@ -106,22 +103,23 @@ def user(user_id):
         colorlist[DG.nodes().index(str(user_id))]='r' #so that the user in question has red node
     
         plt.clf()
-        fig=Figure()
-        ax=fig.add_subplot(111)
+        fig = Figure()
+        ax = fig.add_subplot(111)
         nx.draw(DG,with_labels=True,node_color=colorlist,arrows=True,font_weight='bold',ax=ax)
-        canvas=FigureCanvas(fig)
+        canvas = FigureCanvas(fig)
         png_output = StringIO.StringIO()
         canvas.print_png(png_output)
         nx_img_data = base64.standard_b64encode(png_output.getvalue())
         
     # add user name to title
-    name_query="SELECT username, flagged_as_business FROM users WHERE id='{0}';".format(str(user_id))
+    name_query="SELECT username, flagged_as_business,transaction_count,counterparty_count FROM users WHERE id='{0}';".format(str(user_id))
     name_query_results=pd.read_sql_query(name_query,con)
     username=name_query_results.loc[0]['username']
+    cp_count = name_query_results.loc[0]['counterparty_count']
     flagged_as_business = name_query_results.loc[0]['flagged_as_business']
     
     return render_template("user.html",user_id=user_id, username=username, flagged_as_business=flagged_as_business,transactions=transactions,
-        hist_img_data=hist_img_data,nx_img_data=nx_img_data,counterparties=len(DG.nodes())-1)
+        hist_img_data=hist_img_data,nx_img_data=nx_img_data,counterparties=cp_count)
         
 @app.route('/user/<user_id>',methods=['POST'])
 def user_patch(user_id):
@@ -129,9 +127,11 @@ def user_patch(user_id):
     print "user id: "+str(user_id)
     # Find the user with id user_id
     # Update the database record with whatever was passed in as the flagged_as_business parameter
+    # TODO: make this also able to mark a user as *not* a business
     sql_stmt = "UPDATE users SET flagged_as_business = TRUE WHERE id = %(user_id)s;"
     sqlalchemy_connection.execute(sql_stmt, user_id=user_id)
     query_results.flagged_as_business[query_results.id==user_id]=True
+    
     return redirect(url_for('user', user_id=user_id))
     
 @app.route('/user_search')
