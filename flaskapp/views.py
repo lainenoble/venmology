@@ -72,13 +72,16 @@ def user(user_id):
     
     images=False
     hist_img_data=''
-    if images:
-    # passed axis not bound to passed figure ?? (or vice versa?)
+    if True:
         plt.clf()
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        pd.to_datetime(user_query_results.created_time).hist(bins=20,ax=ax)
-        canvas = FigureCanvas(fig)
+        user_hist = pd.to_datetime(user_query_results.created_time).hist(bins=15,xrot=30)
+        # TODO: set x limits to be whole date range of database
+        # TODO: specify xticklabels via ax.set_xticklabels(xtl)
+        # TODO: adjust label sizes
+        # TODO: maybe change color?
+        plt.tight_layout()
+        user_hist.get_figure().patch.set_alpha(0) #removes ugly gray background box
+        canvas = FigureCanvas(user_hist.get_figure())
         png_output = StringIO.StringIO()
         canvas.print_png(png_output)
         hist_img_data = base64.standard_b64encode(png_output.getvalue())
@@ -90,22 +93,22 @@ def user(user_id):
     
     nx_img_data=''
     DG=nx.DiGraph()
-    if images:
+    if True:
         # user network visualization
         DG=nx.DiGraph()
         DG.add_node(str(user_id))
-        for i in range(0,max(user_query_results.shape[0],30)):
+        for i in range(0,min(user_query_results.shape[0],30)):
             if user_query_results.loc[i]['type']=='payment':
-                DG.add_edge(user_query_results.loc[i]['actor'],query_results.loc[i]['target'])
+                DG.add_edge(user_query_results.loc[i]['actor'],user_query_results.loc[i]['target'])
             else:
-                DG.add_edge(user_query_results.loc[i]['target'],query_results.loc[i]['actor'])
+                DG.add_edge(user_query_results.loc[i]['target'],user_query_results.loc[i]['actor'])
         colorlist=['b' for node in DG.nodes()]
         colorlist[DG.nodes().index(str(user_id))]='r' #so that the user in question has red node
     
         plt.clf()
         fig = Figure()
         ax = fig.add_subplot(111)
-        nx.draw(DG,with_labels=True,node_color=colorlist,arrows=True,font_weight='bold',ax=ax)
+        nx.draw(DG,with_labels=False,node_color=colorlist,arrows=True,font_weight='bold',ax=ax)
         canvas = FigureCanvas(fig)
         png_output = StringIO.StringIO()
         canvas.print_png(png_output)
