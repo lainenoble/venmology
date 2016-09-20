@@ -10,7 +10,6 @@ def train_logreg():
             return trans['target']
         else: #transaction is a charge i.e. request for money
             return trans['actor']
-    transactions['payee']=transactions.apply(payee,axis=1)
 
     users=users[users['date_created'].isnull()!=True]
     users=users.drop_duplicates()
@@ -24,6 +23,8 @@ def train_logreg():
     list0['lastname']='email'
     list0['username']='email'
     users.loc[0]=list0
+    
+     transactions['payee']=transactions.apply(payee,axis=1)
 
     users=users.set_index('id')
     users['actor_count']=transactions.actor.value_counts()
