@@ -128,11 +128,12 @@ def user(user_id):
 def user_patch(user_id):
     print "INSIDE THE POST THINGY"
     print "user id: "+str(user_id)
+    print "flagged as business: "+str(request.form['flagged_as_business'])
     # Find the user with id user_id
     # Update the database record with whatever was passed in as the flagged_as_business parameter
     # TODO: make this also able to mark a user as *not* a business
-    sql_stmt = "UPDATE users SET flagged_as_business = TRUE WHERE id = %(user_id)s;"
-    sqlalchemy_connection.execute(sql_stmt, user_id=user_id)
+    sql_stmt = "UPDATE users SET flagged_as_business = %(flagged_as_business)s WHERE id = %(user_id)s;"
+    sqlalchemy_connection.execute(sql_stmt, user_id=user_id,flagged_as_business=request.form['flagged_as_business'])
     query_results.flagged_as_business[query_results.id==user_id]=True
     
     return redirect(url_for('user', user_id=user_id))

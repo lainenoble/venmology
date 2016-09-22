@@ -75,13 +75,14 @@
             </div>
           </div>
     
-        <div class="btn-group">
+        <div class="btn-group" role="group">
         <form action="{{ url_for('user', user_id=user_id) }}" method=post >
-                <button type="submit" class="btn btn-danger">Flag this user as a business</button>
-
-
-                <button type="submit" class="btn btn-success">This user is not a business</button>
-
+            <input type="hidden" name="flagged_as_business" value="TRUE"> 
+            <button type="submit" class="btn btn-danger">Flag this user as a business</button>
+        </form>
+        <form action="{{ url_for('user', user_id=user_id) }}" method=post>
+            <input type="hidden" name="flagged_as_business" value="FALSE">
+            <button type="submit" class="btn btn-success">This user is not a business</button>
         </form>
         </div>
         
