@@ -36,6 +36,7 @@
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container-fluid">
         <div class="navbar-header">
+        <ul class="nav navbar-nav">
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
@@ -43,10 +44,11 @@
             <span class="icon-bar"></span>
           </button>
           <a class="navbar-brand" href="/">Venmology</a>
+          <li class="active"><a href="/">Back to main page <span class="sr-only">(current)</span></a></li>
+          </ul>
         </div>
         
       </div>
-      <li class="active"><a href="/">Back to main page <span class="sr-only">(current)</span></a></li>
 
     </nav>
 
@@ -66,7 +68,7 @@
             <div class="col-md-6 placeholder">
               <img src="data:image/png;base64,{{hist_img_data}}" width="350" height="200" class="img-responsive" alt="Generic placeholder thumbnail">
               <h4>Transactions over time</h4>
-              <span class="text-muted">Placeholder text</span>
+              <span class="text-muted">User conducted {{transaction_count}} transactions</span>
             </div>
             <div class="col-md-6 placeholder">
               <img src="data:image/png;base64,{{nx_img_data}}" width="350" height="200" class="img-responsive" alt="Generic placeholder thumbnail">
