@@ -18,9 +18,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import base64
 
-
-
-dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
+# For working locally
+dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
 host = 'localhost'
 dbname = 'venmo_db'
 db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
@@ -28,12 +27,22 @@ con = None
 con = psycopg2.connect(database = dbname, user = dbuser)
 sqlalchemy_connection = db.connect()
 
+# For working on EC2/RDS
+# dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
+# host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com:5432'
+# password = '7rB-pEE-3tg-sby'
+# dbname = 'venmo'
+# db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
+# con = None
+# con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
+# sqlalchemy_connection = db.connect()
+
 # Extract training set
 business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
 businesses = pd.read_sql_query(business_query,con)
 
-#sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
-sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
+#sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
+sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
 sample = pd.read_sql_query(sampling_query,con)
 
 # Train model
@@ -55,13 +64,6 @@ query_results=query_results.set_index('id',drop=False) #so that rows can be easi
         
 @app.route('/')
 def mainpage():
-    # for i in range(0,mainpage_query_results.shape[0]):
-#         if mainpage_query_results.iloc[i]['flagged_as_business']:
-#             continue
-#         suspects.append(dict(mainpage_query_results.iloc[i]))
-    # suspects=[{'id':'83295','username':'Laine','date_created':'2016_09_15'}]
-    #query_results = query_results[query_results['flagged_as_business'==False]]
-    #suspects = query_results[query_results['prediction']==1].to_dict('records')
     suspects = query_results.to_dict('records')
     return render_template("mainpage.html",suspects=suspects)
 
@@ -74,9 +76,6 @@ def user(user_id):
     tn_count=len(user_query_results.index)
     
     # transaction timing visualization
-    
-    
-    images=False
     hist_img_data=''
     if True:
         plt.clf()
