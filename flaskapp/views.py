@@ -12,11 +12,15 @@ import networkx as nx
 from sklearn.linear_model import LogisticRegression
 
 import matplotlib
+import datetime
+import time
 
 import StringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import base64
+
+# Establish database connection
 
 # For working locally
 dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
@@ -37,30 +41,43 @@ sqlalchemy_connection = db.connect()
 # con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
 # sqlalchemy_connection = db.connect()
 
-# Extract training set
-business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
-businesses = pd.read_sql_query(business_query,con)
 
-#sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
-sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
-sample = pd.read_sql_query(sampling_query,con)
+def train_model():
+    print('training...')
+    # Extract training set
+    business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
+    businesses = pd.read_sql_query(business_query,con)
 
-# Train model
-featurecols = ['transaction_count','counterparty_count','null_counterparty_count','most_common_word_count','time_var']
-Xtn=np.concatenate((sample.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
-ytn=np.concatenate((np.zeros((sample.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
+    #sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
+    sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
+    sample = pd.read_sql_query(sampling_query,con)
 
-model=LogisticRegression()
-model.fit(Xtn,ytn)
+    # Train model
+    featurecols = ['transaction_count','counterparty_count','null_counterparty_count','most_common_word_count','time_var']
+    Xtn=np.concatenate((sample.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
+    ytn=np.concatenate((np.zeros((sample.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
 
-sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
-query_results = pd.read_sql_query(sql_query, con)
+    model=LogisticRegression()
+    model.fit(Xtn,ytn)
 
-query_results['prediction']=model.predict(query_results[featurecols])
-query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
-query_results=query_results[query_results['prob']>.8]
-query_results=query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
+    sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
+    query_results = pd.read_sql_query(sql_query, con)
 
+    query_results['prediction']=model.predict(query_results[featurecols])
+    query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
+    query_results=query_results[query_results['prob']>.8]
+    query_results=query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
+    print('done!')
+    return query_results
+
+
+# update_time = datetime.datetime.now()
+# train_model()
+# TODO: while true loop, to periodically re-train the model
+# (because this will be running all the time on EC2, so retraining on startup won't make sense)
+# if datetime.datetime.now() - update_time > datetime.timedelta(hours=1):
+query_results=train_model()
+time.sleep(600)
 
         
 @app.route('/')
