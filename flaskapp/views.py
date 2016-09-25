@@ -12,8 +12,7 @@ import networkx as nx
 from sklearn.linear_model import LogisticRegression
 
 import matplotlib
-import datetime
-import time
+import threading # this is for periodically retraining
 
 import StringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -60,24 +59,31 @@ def train_model():
     model=LogisticRegression()
     model.fit(Xtn,ytn)
 
+    # Get users to be classified
     sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
     query_results = pd.read_sql_query(sql_query, con)
 
     query_results['prediction']=model.predict(query_results[featurecols])
     query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
-    query_results=query_results[query_results['prob']>.8]
-    query_results=query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
+    
+    query_results.sort_values(by='prob',ascending=False,inplace=True)
+    query_results = query_results.head(n=50)
+    query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
     print('done!')
     return query_results
 
 
-# update_time = datetime.datetime.now()
-# train_model()
-# TODO: while true loop, to periodically re-train the model
+
+# Periodically re-train the model
 # (because this will be running all the time on EC2, so retraining on startup won't make sense)
-# if datetime.datetime.now() - update_time > datetime.timedelta(hours=1):
+# def training_loop():
+#   query_results=train_model
+#   s=threading.Timer(7200,training_loop)
+#   s.start()
+
+#training_loop()
 query_results=train_model()
-time.sleep(600)
+
 
         
 @app.route('/')
@@ -150,15 +156,13 @@ def user(user_id):
         
 @app.route('/user/<user_id>',methods=['POST'])
 def user_patch(user_id):
-    print "INSIDE THE POST THINGY"
-    print "user id: "+str(user_id)
     print "flagged as business: "+str(request.form['flagged_as_business'])
     # Find the user with id user_id
     # Update the database record with whatever was passed in as the flagged_as_business parameter
     sql_stmt = "UPDATE users SET flagged_as_business = %(flagged_as_business)s WHERE id = %(user_id)s;"
     sqlalchemy_connection.execute(sql_stmt, user_id=user_id,flagged_as_business=request.form['flagged_as_business'])
     # remove the user from the "suspects" data frame so that they no longer show up on mainpage
-    query_results.drop(str(user_id),axis=0,inplace=True) # this line causing "query results referenced before assignment"??
+    query_results.drop(str(user_id),axis=0,inplace=True, errors='ignore') # this line causing "query results referenced before assignment"??
     
 
     #return redirect(url_for('user', user_id=user_id))
