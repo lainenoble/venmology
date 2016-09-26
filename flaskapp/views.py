@@ -13,6 +13,7 @@ from sklearn.linear_model import LogisticRegression
 
 import matplotlib
 import threading # this is for periodically retraining
+import datetime
 
 import StringIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -109,11 +110,18 @@ def user(user_id):
     hist_img_data=''
     if True:
         plt.clf()
-        user_hist = pd.to_datetime(user_query_results.created_time).hist(bins=15,xrot=30)
+        dstart=datetime.datetime(2016,8,22)
+        dend=datetime.datetime(2016,9,6)
+        days=[dstart+datetime.timedelta(days=i,hours=12) for i in range(0,15)]
+        user_hist = user_query_results.created_time.hist(xrot=90,grid=False, bins=len(days),range=(dstart,dend))
+        plt.xlim(dstart,dend)
+        plt.xticks(days,[day.strftime('%a %b %d') for day in days],fontsize=18)
+        plt.yticks(fontsize=18)
         # TODO: set x limits to be whole date range of database
         # TODO: specify xticklabels via ax.set_xticklabels(xtl)
         # TODO: adjust label sizes
         # TODO: maybe change color?
+        
         plt.tight_layout()
         user_hist.get_figure().patch.set_alpha(0) #removes ugly gray background box
         canvas = FigureCanvas(user_hist.get_figure())
