@@ -22,7 +22,7 @@
 
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
     <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="../../assets/js/ie-emulation-modes-warning.js"></script>
+    <!--<script src="../../assets/js/ie-emulation-modes-warning.js"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -55,8 +55,8 @@
     <div class="container-fluid" style="padding-top: 20px;">
       <div class="row">
         <div class="col-md-12 main">
-          <h1 class="page-header">User {{username}} 
-                {% if flagged_as_business %}
+          <h1 class="page-header">User {{user_info['username']}} ({{user_info['firstname']}} {{user_info['lastname']}})
+                {% if user_info['flagged_as_business'] %}
                     <small class="text-danger">
                         <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
                          Flagged as business
@@ -66,57 +66,60 @@
 
           <div class="row placeholders">
             <div class="col-md-6 placeholder">
-              <img src="data:image/png;base64,{{hist_img_data}}" width="350" height="200" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Transactions over time</h4>
-              <span class="text-muted">User conducted {{transaction_count}} transactions</span>
+              <img src="data:image/png;base64,{{hist_img_data}}" width="400" height="300" class="img-responsive" alt="Generic placeholder thumbnail">
+              <h3>Transactions over time</h3>
+              <span class="text-muted">User conducted {{user_info['transaction_count']}} transactions</span>
             </div>
             <div class="col-md-6 placeholder">
-              <img src="data:image/png;base64,{{nx_img_data}}" width="350" height="200" class="img-responsive" alt="Generic placeholder thumbnail">
-              <h4>Transactional network</h4>
-              <span class="text-muted">User transacted with {{counterparties}} others</span>
+              <img src="data:image/png;base64,{{nx_img_data}}" width="400" height="300" class="img-responsive" alt="Generic placeholder thumbnail">
+              <h3>Transactional network</h3>
+              <span class="text-muted">User transacted with {{user_info['counterparty_count']}} others</span>
             </div>
           </div>
+          </div>
+          </div>
+    </div>
     
+    <div class="container-fluid" style="padding-top: 20px;">
         
-            <form class="btn-group" action="{{ url_for('user', user_id=user_id) }}" method=post >
+            <form class="btn-group btn-group-lg" action="{{ url_for('user', user_id=user_id) }}" method=post >
                 <button type="submit" class="btn btn-danger">Flag this user as a business</button>
                 <input type="hidden" class="btn">
                 <input type="hidden" name="flagged_as_business" value="TRUE"> 
             </form>
-            <form class="btn-group" action="{{ url_for('user', user_id=user_id) }}" method=post>
+            <form class="btn-group btn-group-lg" action="{{ url_for('user', user_id=user_id) }}" method=post>
                 <input type="hidden" class="btn">
                 <input type="hidden" name="flagged_as_business" value="FALSE">
                 <button type="submit" class="btn btn-success">This user is not a business</button>
             </form>
+    </div>
         
-        
-          <h2 class="sub-header">Transactions</h2>
+     <div class="container-fluid" style="padding-top: 20px;">  
+          <h1 class="sub-header">Transactions</h1>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead>
                 <tr>
-                  <th>actor</th>
-                  <th>target</th>
-                  <th>time</th>
-                  <th>type</th>
-                  <th>message</th>
+                  <th><h2>actor</h2></th>
+                  <th><h2>target</h2></th>
+                  <th><h2>time</h2></th>
+                  <th><h2>type</h2></th>
+                  <th><h2>message</h2></th>
                 </tr>
               </thead>
               <tbody>
               {% for transaction in transactions %}
               <tr>
-                <td>{{transaction['actor']}}</td>
-                <td>{{transaction['target']}}</td>
-                <td>{{transaction['created_time']}}</td>
-                <td>{{transaction['type']}}</td>
-                <td>{{transaction['message'].decode('utf-8')}}</td>
+                <td><h4>{{transaction['actor']}}</h4></td>
+                <td><h4>{{transaction['target']}}</h4></td>
+                <td><h4>{{transaction['created_time']}}</h4></td>
+                <td><h4>{{transaction['type']}}</h4></td>
+                <td><h4>{{transaction['message'].decode('utf-8')}}</h4></td>
               {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
-    </div>
 
     <!-- Bootstrap core JavaScript
     ================================================== -->

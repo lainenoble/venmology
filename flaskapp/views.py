@@ -46,6 +46,9 @@ def train_model():
     # Extract training set
     business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
     businesses = pd.read_sql_query(business_query,con)
+    
+    nonbusiness_query = "SELECT * FROM users WHERE flagged_as_business=FALSE"
+    nonbusinesses = pd.read_sql_query(business_query,con)
 
     #sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
     sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
@@ -55,6 +58,8 @@ def train_model():
     featurecols = ['transaction_count','counterparty_count','null_counterparty_count','most_common_word_count','time_var']
     Xtn=np.concatenate((sample.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
     ytn=np.concatenate((np.zeros((sample.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
+    #Xtn=np.concatenate((sample.as_matrix(columns=featurecols),nonbusinesses.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
+    #ytn=np.concatenate((np.zeros((sample.shape[0]+nonbusinesses.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
 
     model=LogisticRegression()
     model.fit(Xtn,ytn)
@@ -67,7 +72,7 @@ def train_model():
     query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
     
     query_results.sort_values(by='prob',ascending=False,inplace=True)
-    query_results = query_results.head(n=50)
+    query_results = query_results.head(n=500)
     query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
     print('done!')
     return query_results
@@ -83,6 +88,7 @@ def train_model():
 
 #training_loop()
 query_results=train_model()
+
 
 
         
@@ -116,7 +122,7 @@ def user(user_id):
         hist_img_data = base64.standard_b64encode(png_output.getvalue())
     
     
-    
+    user_query_results.sort_values(by='created_time',ascending=False,inplace=True)
     transactions=user_query_results.to_dict('records')
     
     
@@ -145,14 +151,12 @@ def user(user_id):
         nx_img_data = base64.standard_b64encode(png_output.getvalue())
         
     # add user name to title
-    name_query="SELECT username, flagged_as_business,transaction_count,counterparty_count FROM users WHERE id='{0}';".format(str(user_id))
-    name_query_results=pd.read_sql_query(name_query,con)
-    username=name_query_results.loc[0]['username']
-    cp_count = name_query_results.loc[0]['counterparty_count']
-    flagged_as_business = name_query_results.loc[0]['flagged_as_business']
+    name_query="SELECT * FROM users WHERE id='{0}';".format(str(user_id))
+    name_query_results_dict=pd.read_sql_query(name_query,con).to_dict('records')[0]
     
-    return render_template("user.html",user_id=user_id, username=username, flagged_as_business=flagged_as_business,transactions=transactions,
-        hist_img_data=hist_img_data,nx_img_data=nx_img_data,transaction_count=tn_count,counterparties=cp_count)
+    
+    return render_template("user.html",user_id=user_id, user_info=name_query_results_dict, transactions=transactions,
+        hist_img_data=hist_img_data,nx_img_data=nx_img_data)
         
 @app.route('/user/<user_id>',methods=['POST'])
 def user_patch(user_id):
