@@ -6,12 +6,14 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists,create_database
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import psycopg2
 import networkx as nx
 from sklearn.linear_model import LogisticRegression
 
-import matplotlib
+
 import threading # this is for periodically retraining
 import datetime
 
@@ -23,23 +25,23 @@ import base64
 # Establish database connection
 
 # For working locally
-dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
-host = 'localhost'
-dbname = 'venmo_db'
-db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
-con = None
-con = psycopg2.connect(database = dbname, user = dbuser)
-sqlalchemy_connection = db.connect()
+# dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
+# host = 'localhost'
+# dbname = 'venmo_db'
+# db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
+# con = None
+# con = psycopg2.connect(database = dbname, user = dbuser)
+# sqlalchemy_connection = db.connect()
 
 # For working on EC2/RDS
-# dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
-# host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com'
-# password = '7rB-pEE-3tg-sby'
-# dbname = 'venmo'
-# db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
-# con = None
-# con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
-# sqlalchemy_connection = db.connect()
+dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
+host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com'
+password = '7rB-pEE-3tg-sby'
+dbname = 'venmo'
+db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
+con = None
+con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
+sqlalchemy_connection = db.connect()
 
 
 def train_model():
@@ -78,16 +80,6 @@ def train_model():
     print('done!')
     return query_results
 
-
-
-# Periodically re-train the model
-# (because this will be running all the time on EC2, so retraining on startup won't make sense)
-# def training_loop():
-#   query_results=train_model
-#   s=threading.Timer(7200,training_loop)
-#   s.start()
-
-#training_loop()
 query_results=train_model()
 
 
