@@ -55,23 +55,23 @@
                     <div class="row">
                         <div class="col-md-2 text-center">
                             <h3><span class="glyphicon glyphicon-transfer"></span></h3>
-                            <h5>{{user_info['transaction_count']}} Transaction{% if user_info['transaction_count'] !=1 %}s{% endif %}</h5>
+                            <h5>{{user_info['transaction_count']}} transaction{% if user_info['transaction_count'] !=1 %}s{% endif %}</h5>
                             </br>
                             <h3><span class="glyphicon glyphicon-user"></span></h3>
-                            <h5>{{user_info['counterparty_count']}} Counterpartie{% if user_info['counterparty_count'] !=1 %}s{% endif %}</h5>
+                            <h5>{{user_info['counterparty_count']}} counterpart{% if user_info['counterparty_count'] !=1 %}ies{%else%}y{% endif %}</h5>
                             </br>
                             <h3><span class="glyphicon glyphicon-log-in"></span></h3>
-                            <h5>Received from {{payee_count}} User{% if payee_count !=1 %}s{% endif %}</h5>
+                            <h5>Received $ from {{payee_count}} user{% if payee_count !=1 %}s{% endif %}</h5>
                             </br>
                             <h3><span class="glyphicon glyphicon-log-out"></span></h3>
-                            <h5>Sent to {{remitter_count}} User{% if remitter_count !=1 %}s{% endif %}</h5>
+                            <h5>Sent $ to {{remitter_count}} user{% if remitter_count !=1 %}s{% endif %}</h5>
                         </div>
                         <div class="col-md-5 text-center">
-                            <h3>Transactional Network</h3>
+                            <h3>Transactional network</h3>
                             <img src="data:image/png;base64,{{nx_img_data}}" class="img-responsive" alt="Generic placeholder thumbnail">
                         </div>
                         <div class="col-md-5 text-center">
-                            <h3>Transactions Over Time</h3>
+                            <h3>Transactions over time</h3>
                             <img src="data:image/png;base64,{{hist_img_data}}" class="img-responsive" alt="Generic placeholder thumbnail">
                         </div>
                     </div>

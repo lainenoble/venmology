@@ -79,6 +79,9 @@ def train_model():
     query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
     print('done!')
     return query_results
+#     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
+#     query_results = pd.read_sql_query(query,con)
+#     return query_results
 
 query_results=train_model()
 
@@ -102,17 +105,23 @@ def user(user_id):
     hist_img_data=''
     if True:
         plt.clf()
+        plt.figure(figsize=(12, 9))
+        ax = plt.subplot(111)
         dstart=datetime.datetime(2016,8,22)
         dend=datetime.datetime(2016,9,6)
         days=[dstart+datetime.timedelta(days=i,hours=12) for i in range(0,15)]
-        user_hist = user_query_results.created_time.hist(xrot=90,grid=False, bins=len(days),range=(dstart,dend))
+        user_hist = user_query_results.created_time.hist(xrot=90,grid=False, bins=len(days),range=(dstart,dend),edgecolor='w',lw=5)
         plt.xlim(dstart,dend)
         plt.xticks(days,[day.strftime('%a %b %d') for day in days],fontsize=18)
         plt.yticks(fontsize=18)
-        # TODO: set x limits to be whole date range of database
-        # TODO: specify xticklabels via ax.set_xticklabels(xtl)
-        # TODO: adjust label sizes
         # TODO: maybe change color?
+        
+        ax.spines["top"].set_visible(False)    
+        ax.spines["bottom"].set_visible(False)    
+        ax.spines["right"].set_visible(False)    
+        ax.spines["left"].set_visible(False)
+        ax.get_xaxis().tick_bottom()    
+        ax.get_yaxis().tick_left() 
         
         plt.tight_layout()
         user_hist.get_figure().patch.set_alpha(0) #removes ugly gray background box
@@ -158,8 +167,7 @@ def user(user_id):
         plt.clf()
         fig = Figure()
         ax = fig.add_subplot(111)
-        # TODO: try messing with this, see if it can be sped up
-        nx.draw(DG,with_labels=False,node_color=colorlist,arrows=True,font_weight='bold',ax=ax)
+        nx.draw(DG,with_labels=False,node_color=colorlist,arrows=True,font_weight='bold',ax=ax,linewidths=0,edgecolor='w')
         canvas = FigureCanvas(fig)
         png_output = StringIO.StringIO()
         canvas.print_png(png_output)
@@ -187,10 +195,8 @@ def user_patch(user_id):
     sql_stmt = "UPDATE users SET flagged_as_business = %(flagged_as_business)s WHERE id = %(user_id)s;"
     sqlalchemy_connection.execute(sql_stmt, user_id=user_id,flagged_as_business=request.form['flagged_as_business'])
     # remove the user from the "suspects" data frame so that they no longer show up on mainpage
-    query_results.drop(str(user_id),axis=0,inplace=True, errors='ignore') # this line causing "query results referenced before assignment"??
+    query_results.drop(str(user_id),axis=0,inplace=True, errors='ignore')
     
-
-    #return redirect(url_for('user', user_id=user_id))
     return redirect(url_for('mainpage'))
     
 @app.route('/user_search')
