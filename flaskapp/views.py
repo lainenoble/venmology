@@ -150,7 +150,7 @@ def user(user_id):
         DG=nx.DiGraph()
         DG.add_node(str(user_id))
         for i in range(0,user_query_results.shape[0]):
-            if cp_query_results.loc[i]['type']=='payment':
+            if user_query_results.loc[i]['type']=='payment':
                 DG.add_edge(user_query_results.loc[i]['actor'],user_query_results.loc[i]['target'])
             else:
                 DG.add_edge(user_query_results.loc[i]['target'],user_query_results.loc[i]['actor'])
