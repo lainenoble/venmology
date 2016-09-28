@@ -32,27 +32,26 @@
   </head>
 
   <body>
-
+    
     <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-
-          <form class="navbar-form navbar-right" action="{{ url_for('search') }}" method=get>
-            <input type="text" class="form-control" name="search_terms" placeholder="user ID">
-            <button type="submit" class="btn btn-default">Search</button>
-          </form>
-          <a class="navbar-brand" href="#">Venmology</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-        </div>
-      </div>
-    </nav>
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <ul class="nav navbar-nav">
+                        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        </button>
+                        <form class="navbar-form navbar-right" action="{{ url_for('search') }}" method=get>
+                            <input type="text" class="form-control" name="search_terms" placeholder="user ID">
+                            <button type="submit" class="btn btn-default">Search</button>
+                        </form>
+                        <a class="navbar-brand" href="/">Venmology</a>
+                    </ul>
+                </div>
+            </div>
+        </nav>
 
 
 <br><br>
@@ -60,8 +59,10 @@
     <div class="container">
 
       <div class="starter-template">
-        <h1>Suspicious Users</h1>
-        <p class="lead">The following users have transaction patterns that indicate they may be businesses</p>
+        <h1>Search results</h1>
+        {% if results %}<p class="lead">The following users matched your query</p>
+        {% else %}<p class="lead">No users matched your query</p>
+        {% endif %}
       </div>
 
 <table class = "table table-hover">
@@ -71,12 +72,12 @@
     <th><h3>user since</h3></th>
     <th><h3>score</h3></th>
 </tr> 
-{% for suspect in suspects %} 
+{% for result in results %} 
 <tr>
-    <td><h3><small><a href="{{ url_for('user', user_id=suspect['id']) }}">{{ suspect['id'] }}</a></h3></td>
-    <td><h3><small>{{ suspect['username'] }}</small></h3></td>
-    <td><h3><small> {{ suspect['date_created'] }}</small></h3></td>
-    <td><h3><small> {{ suspect['prob'] }}</small></h3></td>
+    <td><h3><small><a href="{{ url_for('user', user_id=result['id']) }}">{{ result['id'] }}</a></h3></td>
+    <td><h3><small>{{ result['username'] }}</small></h3></td>
+    <td><h3><small> {{ result['date_created'] }}</small></h3></td>
+    <td><h3><small> {{ result['prob'] }}</small></h3></td>
 </tr> 
 {% endfor %} 
 </table> 
