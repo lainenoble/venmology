@@ -130,13 +130,28 @@ def user(user_id):
     DG=nx.DiGraph()
     if True:
         # user network visualization
+        cp_query="""WITH both_ends AS (SELECT actor, target
+            FROM transactions 
+            WHERE transactions.actor='{0}' OR transactions.target='{0}'),
+            parties AS (SELECT actor AS id from both_ends UNION SELECT target AS id from both_ends)
+            SELECT actor, target,type
+            FROM parties AS a JOIN transactions ON a.id=transactions.actor
+            JOIN parties AS b ON transactions.target=b.id;""".format(str(user_id))
+        cp_query_results = pd.read_sql_query(cp_query,con)
         DG=nx.DiGraph()
         DG.add_node(str(user_id))
-        for i in range(0,min(user_query_results.shape[0],30)):
-            if user_query_results.loc[i]['type']=='payment':
+        for i in range(0,user_query_results.shape[0]):
+            if cp_query_results.loc[i]['type']=='payment':
                 DG.add_edge(user_query_results.loc[i]['actor'],user_query_results.loc[i]['target'])
             else:
                 DG.add_edge(user_query_results.loc[i]['target'],user_query_results.loc[i]['actor'])
+        remitter_count = DG.out_degree(str(user_id))
+        payee_count = DG.in_degree(str(user_id))
+        for i in range(0,min(cp_query_results.shape[0],30)):
+            if cp_query_results.loc[i]['type']=='payment':
+                DG.add_edge(cp_query_results.loc[i]['actor'],cp_query_results.loc[i]['target'])
+            else:
+                DG.add_edge(cp_query_results.loc[i]['target'],cp_query_results.loc[i]['actor'])
         colorlist=['b' for node in DG.nodes()]
         colorlist[DG.nodes().index(str(user_id))]='r' #so that the user in question has red node
     
@@ -155,8 +170,14 @@ def user(user_id):
     name_query_results_dict=pd.read_sql_query(name_query,con).to_dict('records')[0]
     
     
-    return render_template("user.html",user_id=user_id, user_info=name_query_results_dict, transactions=transactions,
-        hist_img_data=hist_img_data,nx_img_data=nx_img_data)
+    return render_template("user.html",
+        user_id=user_id, 
+        user_info=name_query_results_dict, 
+        transactions=transactions, 
+        remitter_count = remitter_count,
+        payee_count = payee_count,
+        hist_img_data=hist_img_data,
+        nx_img_data=nx_img_data)
         
 @app.route('/user/<user_id>',methods=['POST'])
 def user_patch(user_id):
