@@ -4,7 +4,6 @@ from flaskapp import app
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy_utils import database_exists,create_database
 
 import matplotlib
 matplotlib.use("Agg")
