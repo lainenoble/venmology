@@ -25,72 +25,76 @@ import base64
 # Establish database connection
 
 # For working locally
-dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
-host = 'localhost'
-dbname = 'venmo_db'
-db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
-con = None
-con = psycopg2.connect(database = dbname, user = dbuser)
-sqlalchemy_connection = db.connect()
+# dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)   
+# host = 'localhost'
+# dbname = 'venmo_db'
+# db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
+# con = None
+# con = psycopg2.connect(database = dbname, user = dbuser)
+# sqlalchemy_connection = db.connect()
 
 # For working on EC2/RDS
-#dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
-#host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com'
-#password = '7rB-pEE-3tg-sby'
-#dbname = 'venmo'
-#db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
-#con = None
-#con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
-#sqlalchemy_connection = db.connect()
+dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
+host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com'
+password = '7rB-pEE-3tg-sby'
+dbname = 'venmo'
+db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
+con = None
+con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
+sqlalchemy_connection = db.connect()
 
 
 def train_model():
-#     print('training...')
-#     # Extract training set
-#     business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
-#     businesses = pd.read_sql_query(business_query,con)
-#     
-#     nonbusiness_query = "SELECT * FROM users WHERE flagged_as_business=FALSE"
-#     nonbusinesses = pd.read_sql_query(business_query,con)
-# 
-#     #sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
-#     sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
-#     sample = pd.read_sql_query(sampling_query,con)
-# 
-#     # Train model
-#     featurecols = ['transaction_count','counterparty_count','null_counterparty_count','most_common_word_count','time_var']
-#     Xtn=np.concatenate((sample.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
-#     ytn=np.concatenate((np.zeros((sample.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
-#     #Xtn=np.concatenate((sample.as_matrix(columns=featurecols),nonbusinesses.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
-#     #ytn=np.concatenate((np.zeros((sample.shape[0]+nonbusinesses.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
-# 
-#     model=LogisticRegression()
-#     model.fit(Xtn,ytn)
-# 
-#     # Get users to be classified
-#     sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
-#     query_results = pd.read_sql_query(sql_query, con)
-# 
-#     query_results['prediction']=model.predict(query_results[featurecols])
-#     query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
-#     
-#     query_results.sort_values(by='prob',ascending=False,inplace=True)
-#     query_results = query_results.head(n=500)
-#     query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
-#     print('done!')
+    global query_results
+    print(datetime.datetime.now())
+    print('training...')
+    # Extract training set
+    business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
+    businesses = pd.read_sql_query(business_query,con)
+    
+    nonbusiness_query = "SELECT * FROM users WHERE flagged_as_business=FALSE"
+    nonbusinesses = pd.read_sql_query(business_query,con)
+
+    #sampling_query = "SELECT * FROM users WHERE flagged_as_business IS NULL LIMIT 500;"
+    sampling_query = "SELECT * FROM users WHERE RANDOM()<.0001 AND flagged_as_business IS NULL ORDER BY RANDOM() LIMIT 500;"
+    sample = pd.read_sql_query(sampling_query,con)
+
+    # Train model
+    featurecols = ['transaction_count','counterparty_count','null_counterparty_count','most_common_word_count','time_var']
+    Xtn=np.concatenate((sample.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
+    ytn=np.concatenate((np.zeros((sample.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
+    #Xtn=np.concatenate((sample.as_matrix(columns=featurecols),nonbusinesses.as_matrix(columns=featurecols),businesses.as_matrix(columns=featurecols)),axis=0)
+    #ytn=np.concatenate((np.zeros((sample.shape[0]+nonbusinesses.shape[0],)),np.ones((businesses.shape[0],))),axis=0)
+
+    model=LogisticRegression()
+    model.fit(Xtn,ytn)
+
+    # Get users to be classified
+    sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
+    query_results = pd.read_sql_query(sql_query, con)
+
+    query_results['prediction']=model.predict(query_results[featurecols])
+    query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
+    
+    query_results.sort_values(by='prob',ascending=False,inplace=True)
+    query_results = query_results.head(n=500)
+    query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
+    print('done!')
+    threading.Timer(7200,train_model).start()
 #     return query_results
-    query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
-    query_results = pd.read_sql_query(query,con)
-    return query_results
+#     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
+#     query_results = pd.read_sql_query(query,con)
+#     return query_results
 
-query_results=train_model()
-
+#query_results=train_model()
+train_model()
 
 
         
 @app.route('/')
 def mainpage():
     suspects = query_results.to_dict('records')
+    #query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL ORDER BY prob LIMIT 500;"
     return render_template("mainpage.html",suspects=suspects)
 
 @app.route('/user/<user_id>', methods=['GET'])
