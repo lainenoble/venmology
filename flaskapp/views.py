@@ -77,9 +77,12 @@ def train_model():
     
     query_results.sort_values(by='prob',ascending=False,inplace=True)
     query_results = query_results.head(n=500)
+    query_results = query_results.round(3)
     query_results = query_results.set_index('id',drop=False) #so that rows can be easily dropped as users are flagged
     print('done!')
-    threading.Timer(7200,train_model).start()
+    training_timer = threading.Timer(7200,train_model)
+    training_timer.daemon = True
+    training_timer.start()
 #     return query_results
 #     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
 #     query_results = pd.read_sql_query(query,con)
