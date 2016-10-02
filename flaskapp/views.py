@@ -38,15 +38,18 @@ host = 'venmo.cnjwpcz1pk7b.us-west-2.rds.amazonaws.com'
 password = '7rB-pEE-3tg-sby'
 dbname = 'venmo'
 db = create_engine('postgres://%s:%s@%s/%s'%(dbuser,password,host,dbname))
-con = None
-con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
-sqlalchemy_connection = db.connect()
 
+def establish_connection():
+    con = None
+    con = psycopg2.connect(database = dbname, user = dbuser, password = password, host = host)
+    return con
+    
 
 def train_model():
     global query_results
     print(datetime.datetime.now())
     print('training...')
+    con = establish_connection()
     # Extract training set
     business_query = "SELECT * FROM users WHERE flagged_as_business=TRUE;"
     businesses = pd.read_sql_query(business_query,con)
@@ -71,6 +74,8 @@ def train_model():
     # Get users to be classified
     sql_query = "SELECT * FROM users WHERE transaction_count>10 AND flagged_as_business IS NULL;"
     query_results = pd.read_sql_query(sql_query, con)
+    
+    con.close()
 
     query_results['prediction']=model.predict(query_results[featurecols])
     query_results['prob']=model.predict_proba(query_results[featurecols])[:,1]
@@ -82,7 +87,7 @@ def train_model():
     print('done!')
     training_timer = threading.Timer(7200,train_model)
     training_timer.daemon = True
-    training_timer.start()
+    #training_timer.start()
 #     return query_results
 #     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
 #     query_results = pd.read_sql_query(query,con)
@@ -102,10 +107,27 @@ def mainpage():
 @app.route('/user/<user_id>', methods=['GET'])
 def user(user_id):
     plt.clf()
+    con = establish_connection()
+    
     user_query="SELECT * FROM transactions WHERE actor = %(user_id)s OR target = %(user_id)s;"
     # NOTE: using %(user_id)s [see psycopg2 documentation] prevents sql injection
     user_query_results = pd.read_sql_query(user_query, con,params={'user_id':user_id})
     tn_count=len(user_query_results.index)
+    
+        # add user name to title
+    name_query="SELECT * FROM users WHERE id='{0}';".format(str(user_id))
+    name_query_results_dict=pd.read_sql_query(name_query,con).to_dict('records')[0]
+    
+    cp_query="""WITH both_ends AS (SELECT actor, target
+            FROM transactions 
+            WHERE transactions.actor='{0}' OR transactions.target='{0}'),
+            parties AS (SELECT actor AS id from both_ends UNION SELECT target AS id from both_ends)
+            SELECT actor, target,type
+            FROM parties AS a JOIN transactions ON a.id=transactions.actor
+            JOIN parties AS b ON transactions.target=b.id;""".format(str(user_id))
+    cp_query_results = pd.read_sql_query(cp_query,con)
+        
+    con.close()
     
     # transaction timing visualization
     hist_img_data=''
@@ -145,14 +167,6 @@ def user(user_id):
     DG=nx.DiGraph()
     if True:
         # user network visualization
-        cp_query="""WITH both_ends AS (SELECT actor, target
-            FROM transactions 
-            WHERE transactions.actor='{0}' OR transactions.target='{0}'),
-            parties AS (SELECT actor AS id from both_ends UNION SELECT target AS id from both_ends)
-            SELECT actor, target,type
-            FROM parties AS a JOIN transactions ON a.id=transactions.actor
-            JOIN parties AS b ON transactions.target=b.id;""".format(str(user_id))
-        cp_query_results = pd.read_sql_query(cp_query,con)
         DG=nx.DiGraph()
         DG.add_node(str(user_id))
         for i in range(0,user_query_results.shape[0]):
@@ -179,9 +193,6 @@ def user(user_id):
         canvas.print_png(png_output)
         nx_img_data = base64.standard_b64encode(png_output.getvalue())
         
-    # add user name to title
-    name_query="SELECT * FROM users WHERE id='{0}';".format(str(user_id))
-    name_query_results_dict=pd.read_sql_query(name_query,con).to_dict('records')[0]
     
     
     return render_template("user.html",
@@ -198,8 +209,10 @@ def user_patch(user_id):
     print "flagged as business: "+str(request.form['flagged_as_business'])
     # Find the user with id user_id
     # Update the database record with whatever was passed in as the flagged_as_business parameter
+    sqlalchemy_connection = db.connect()
     sql_stmt = "UPDATE users SET flagged_as_business = %(flagged_as_business)s WHERE id = %(user_id)s;"
     sqlalchemy_connection.execute(sql_stmt, user_id=user_id,flagged_as_business=request.form['flagged_as_business'])
+    sqlalchemy_connection.close()
     # remove the user from the "suspects" data frame so that they no longer show up on mainpage
     query_results.drop(str(user_id),axis=0,inplace=True, errors='ignore')
     
@@ -208,11 +221,13 @@ def user_patch(user_id):
 @app.route('/search')
 def search():
     input = request.args.get('search_terms')
+    con = establish_connection()
     search_query = """SELECT * FROM users WHERE
                     username LIKE '%{0}%' OR
                     name LIKE '%{0}%' OR
                     id = '{0}';""".format(input)
     search_results = pd.read_sql_query(search_query,con)
+    con.close()
     search_results = search_results.to_dict('records')
                     
     return render_template("results.html",results = search_results)
