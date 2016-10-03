@@ -232,4 +232,5 @@ def search():
     
 @app.route('/presentation')
 def presentation():
-    return send_file('/Users/lainenoble/Desktop/venmo/venmo_app_files/flaskapp/static/index.html',mimetype='text/html')
+    #return send_file('/Users/lainenoble/Desktop/venmo/venmo_app_files/flaskapp/static/index.html',mimetype='text/html')
+    return render_template("embed_presentation.html")
