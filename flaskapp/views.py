@@ -86,10 +86,10 @@ def train_model():
     training_timer = threading.Timer(7200,train_model)
     training_timer.daemon = True
     training_timer.start()
-
+#     global query_results
 #     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
 #     query_results = pd.read_sql_query(query,con)
-#     return query_results
+
 
 #query_results=train_model()
 train_model()
@@ -232,5 +232,5 @@ def search():
     
 @app.route('/presentation')
 def presentation():
-    #return send_file('/Users/lainenoble/Desktop/venmo/venmo_app_files/flaskapp/static/index.html',mimetype='text/html')
     return render_template("embed_presentation.html")
+
