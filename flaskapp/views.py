@@ -28,9 +28,7 @@ import base64
 # host = 'localhost'
 # dbname = 'venmo_db'
 # db = create_engine('postgres://%s@%s/%s'%(dbuser,host,dbname))
-# con = None
-# con = psycopg2.connect(database = dbname, user = dbuser)
-# sqlalchemy_connection = db.connect()
+# password = ''
 
 # For working on EC2/RDS
 dbuser = 'lainenoble' #add your username here (same as previous postgreSQL)            
@@ -87,8 +85,8 @@ def train_model():
     print('done!')
     training_timer = threading.Timer(7200,train_model)
     training_timer.daemon = True
-    #training_timer.start()
-#     return query_results
+    training_timer.start()
+
 #     query= "SELECT * FROM users WHERE transaction_count>20 LIMIT 100;"
 #     query_results = pd.read_sql_query(query,con)
 #     return query_results
@@ -231,3 +229,7 @@ def search():
     search_results = search_results.to_dict('records')
                     
     return render_template("results.html",results = search_results)
+    
+@app.route('/presentation')
+def presentation():
+    return send_file('/Users/lainenoble/Desktop/venmo/venmo_app_files/flaskapp/static/index.html',mimetype='text/html')
