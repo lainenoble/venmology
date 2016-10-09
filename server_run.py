@@ -1,3 +1,5 @@
 #!/usr/bin/python
 from flaskapp import app
-app.run(host='0.0.0.0',port=80)
+from gevent.pywsgi import WGSIServer
+http_server = WSGIServer(('',80),app)
+http_server.serve_forever()
